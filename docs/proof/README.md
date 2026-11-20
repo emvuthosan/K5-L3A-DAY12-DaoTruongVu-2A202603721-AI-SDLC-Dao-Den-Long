@@ -1,6 +1,6 @@
 # Bằng chứng kiểm chứng
 
-> Mỗi mục Phase mô tả bản ở tag tương ứng. Phase 3 thay một số luật của Phase 1–2 (xem `CHANGELOG.md`); bằng chứng hiện hành nằm ở mục **Phase 3** và `docs/proof/phase3/`.
+> Mỗi mục Phase mô tả bản ở tag tương ứng. Phase 3 thay một số luật của Phase 1–2 (xem `CHANGELOG.md`); bằng chứng về luật nằm ở mục **Phase 3** (`docs/proof/phase3/`), số đo và bảng xếp hạng/trợ năng nằm ở mục **Phase 4** (`docs/proof/phase4/`).
 
 > Phase 1 (tag `phase-1`) dùng Contract v1.0 và số liệu cũ; phần Phase 1 bên dưới mô tả bản ở tag đó, `docs/proof/phase1/` là đầu ra của tag đó. Phase 2 thay luật (xem `docs/notes/assumptions.md`), bằng chứng hiện hành nằm ở mục Phase 2 và `docs/proof/phase2/`.
 
@@ -90,3 +90,27 @@ Máy: Windows 10, Python 3.11.9. Tái tạo: `python3 -m unittest discover -s te
 - Nhấp nháy 1 Hz, đèn xẹp 20% + vết rách, biểu tượng ⚠ và màu `#00B3FF` của viền/mắt Bóng Mực có trong mã nhưng chưa quan sát trực tiếp (ảnh chụp chỉ thấy thanh dầu, vùng an toàn và HUD).
 - Chưa chơi trọn một Đêm bằng tay tới bình minh trên giao diện (màn kết quả mới "Bình minh! giữ được k đèn" chưa được xem).
 - Một số chi tiết ticket để ngỏ đã tự giả định (`assumptions.md` #29–36); test ẩn có thể chọn khác (ví dụ tốc độ `wander` có mục tiêu).
+
+
+## Phase 4 (Contract v1.3, v1.0.0)
+
+Máy: Windows 10, Python 3.11.9, Chrome 157, NVIDIA GeForce RTX 3050 Laptop GPU. Spec/AC: [../notes/spec-phase4.md](../notes/spec-phase4.md). Số đo do chính lệnh `bench`/`soak` sinh ra (không sửa tay) và được commit: [phase4/bench.json](phase4/bench.json), [phase4/soak.json](phase4/soak.json). Đây là số đo trên máy làm bài, **không phải máy chấm**.
+
+| Yêu cầu | Cách kiểm chứng | Bằng chứng | Kết quả |
+|---|---|---|---|
+| Benchmark: cảnh chuẩn 200 Bóng Mực wander + 100 đom đóm + L1–L3 sáng fuel 100; tắt sinh thêm/sát thương/nhặt/hao dầu/kết thúc; Bóng Mực vẫn wander | `BenchScene.*` | unit test | Đạt |
+| Benchmark: công thức `avg_fps`, `p1_low_fps` (k = max(1, ceil(0.01N))), `frame_ms_p95` | `BenchMetrics.test_definitions` | unit test | Đạt |
+| Benchmark chạy thật, thoát mã 0, đủ trường | `python3 -m game.bench --seed 42 --duration 30 --out bench.json` | avg 643.6 FPS, p1-low 211.8 FPS, p95 2.3 ms, 19 309 khung, load 903 ms, bộ nhớ đỉnh 690 MB (cây tiến trình Chrome) | Đạt (ngưỡng 60 / 30 / 10 000 ms đạt trên máy làm bài) |
+| Soak 10 Đêm trong một tiến trình: `crashes = 0`, `mem_end ≤ 1.2 × mem_start` | `python3 -m game.soak --seed 7 --nights 10 --out soak.json`; `Soak.*` (tất định) | 0 crash, RSS 22.1 → 22.1 MB, 1.4 s; cả 10 Đêm thua (người chơi ngẫu nhiên) | Đạt |
+| Bảng xếp hạng: luật tên, top 10, thứ tự và hòa, lưu bền, xuất `--export-leaderboard`, lưu một lần mỗi lần kết thúc | `Leaderboard.*` | unit test (gồm tiến trình riêng đọc lại file) | Đạt |
+| Bảng xếp hạng: nhập tên trên giao diện, màn hình từ menu | — | — | **Chưa kiểm bằng tay trọn vẹn**: ván thử đứng yên không thua nên không tới màn nhập tên; mới kiểm logic lưu và API |
+| Đổi phím: 9 hành động, báo trùng, khôi phục mặc định, lưu | thao tác trong trình duyệt | gán Nhảy → W bị từ chối với cảnh báo "đã dùng cho Đi lên"; gán → J được và lưu `KeyJ`; "Khôi phục mặc định" trả về Space | Đạt |
+| Giảm chuyển động, chữ lớn ×1.25 | thao tác trong trình duyệt | gốc 18 px → 22.5 px khi bật chữ lớn; cài đặt lưu `rm`, `big`; rung/chớp được bỏ qua khi `rm` (đọc mã, chưa quan sát bằng mắt) | Đạt một phần |
+| Chữ UI ≥ 18 px ở 1280×720 | đo `getComputedStyle` mọi phần tử có chữ | lần đo đầu thấy 13.3 px ở nút/ô nhập ngoài `.screen`; đã sửa bằng `button,input{font-size:1rem}` | Đã sửa; **chưa đo lại toàn bộ** sau sửa (chỉ kiểm CSS) |
+| Phụ đề/chỉ báo hình ảnh (Bóng Mực xuất hiện + mũi tên, gió sắp thổi, 10 s cuối, đèn < 30) | chạy game | ảnh [phase4-gameplay.jpg](phase4-gameplay.jpg) (⚠ chế độ mù màu, viền xanh của Bóng Mực, dòng báo Bóng Mực xuất hiện); các chỉ báo khác đọc mã | Đạt một phần |
+| Đóng gói: README đủ mục, CHANGELOG 4 phase, CREDITS, LICENSE, zip phát hành | `scripts/make_release.py` | `dist/dao-den-long-v1.0.0.zip` | Đạt (zip chưa đăng lên GitHub Release: máy không có `gh`) |
+| Clone sạch → 2 lệnh → chơi được | — | — | **Chưa thử trên máy sạch/macOS/Linux** |
+| Hồi quy Phase 1–3 còn hiệu lực | 89 test + 20 scenario | PASS | Đạt |
+| Video demo `.mp4` < 5 phút | — | kịch bản [../demo/DEMO.md](../demo/DEMO.md) | **Chưa đạt** (không quay được trong phiên làm bài) |
+
+**Hạn chế đã biết:** `vsync_off` được ghi theo cờ trình duyệt đã truyền, không kiểm chứng được từ trang web; FPS đo bằng `requestAnimationFrame` kèm chờ GPU (`readPixels`) nên không bị phóng đại nhưng vẫn phụ thuộc trình duyệt/GPU của máy chấm.

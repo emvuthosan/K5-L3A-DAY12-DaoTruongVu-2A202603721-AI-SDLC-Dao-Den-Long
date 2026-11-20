@@ -36,3 +36,16 @@ Lỗi của AI / lần sai và cách phát hiện:
 2. Hai test của tôi viết sai kỳ vọng: pulse đặt bóng cách 5.0 m nhưng khoảng cách 3D (tâm +0.8) làm nó ngoài tầm; scenario headless có đèn L1 bị chính lệnh châm dầu làm đầy nên không bao giờ tắt. Test đỏ → đối chiếu với ticket → sửa test, không nới assert. Scenario `refuel` kỳ vọng 5 đom đóm nhưng đúng luật là 6 (hao dầu trước tương tác): sửa kỳ vọng + ghi giả định #29.
 3. Lệnh shell nhiều dấu nháy lại lỗi: chuyển sang ghi script vá ra file.
 Harness chỉnh: AGENTS.md ghi "đèn: dùng `_zone`, dầu là số nguyên 1/60"; skill `verify` trỏ tới `docs/proof/phase3`.
+
+# Phase 4 (Ticket-04)
+
+Token Phase 4: **ước tính** 300–400k (client viết lại, bench/soak/bảng xếp hạng, test, tài liệu). Là ước tính.
+
+Quyết định: bản chơi là web nên benchmark chạy trình duyệt thật (không headless) và đo `requestAnimationFrame` từ trang; số đo tải từ trang về server Python qua `/bench_report`, server tính các chỉ số đúng định nghĩa của ticket (có test đơn vị cho công thức). Vẽ bằng `InstancedMesh` để 200 Bóng Mực + 100 đom đóm chỉ tốn 6 draw call.
+
+Lỗi của AI / lần sai trong phase này:
+1. Benchmark đầu báo ≈1800 FPS (rAF không chờ GPU) → thêm `readPixels` mỗi khung, còn ≈430 FPS; ghi vào giả định #39.
+2. Lần chạy benchmark 30 s đầu treo (trình duyệt/cửa sổ) và bị `timeout` bao ngoài không dừng được tiến trình con trên Windows; phải kill tay rồi chạy lại ở nền. Ghi nhận như hạn chế của lệnh `timeout` trên Windows.
+3. Sót kiểm cỡ chữ: kiểm bằng JS tìm ra nút/ô nhập mặc định 13.3 px (nằm ngoài `.screen`) → thêm quy tắc `button,input{font-size:1rem}`.
+4. Kiểm tay giao diện bị chặn: ván đứng yên không thua nên không tới màn nhập tên; kiểm logic lưu bằng test gọi trực tiếp `Game.submit_score` thay vì chơi qua giao diện (ghi rõ trong proof).
+Harness chỉnh: AGENTS.md thêm lệnh bench/soak/export và quy ước "cảnh bench không có thêm thứ gì".

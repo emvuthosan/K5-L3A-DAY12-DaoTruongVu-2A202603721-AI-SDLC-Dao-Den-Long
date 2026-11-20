@@ -1,5 +1,18 @@
 # Changelog
 
+## Phase 4 — "Bình minh: phát hành v1.0.0" (Contract v1.3, tag `phase-4`, Release `v1.0.0`)
+
+### Thêm mới
+- **Benchmark** `python3 -m game.bench --seed 42 --duration 30 --out bench.json` (cảnh chuẩn 1280×720, 200 Bóng Mực, 100 đom đóm, camera quay) và **soak test** `python3 -m game.soak --seed 7 --nights 10 --out soak.json`.
+- **Bảng xếp hạng cục bộ** (top 10, lưu trên đĩa), màn hình trong menu, nhập tên sau Bình Minh hoặc khi thua; `python3 -m game.server --export-leaderboard out.json`.
+- **Dễ tiếp cận:** đổi phím (9 hành động, báo trùng, khôi phục mặc định), phụ đề/chỉ báo hình ảnh (Bóng Mực xuất hiện kèm mũi tên, gió sắp thổi, 10 s cuối, đèn sắp cạn dầu), giảm chuyển động, chữ ≥ 18 px và tùy chọn chữ lớn ×1.25.
+- Contract v1.3: `bench_cmd`, `soak_cmd`. Mọi yêu cầu v1.0–v1.2 giữ nguyên.
+
+### Thay đổi nội bộ (không đổi luật)
+- Client vẽ Bóng Mực và đom đóm bằng `InstancedMesh` (4 + 2 draw call cho mọi số lượng), vòng vẽ tách khỏi vòng hỏi trạng thái. Phím tạm dừng mặc định chỉ còn `Esc` (trước đây `Esc` và `P`) vì mọi hành động giờ có đúng một phím.
+- `Sim(bench=True)` tắt sinh thêm, sát thương, nhặt, hao dầu và kết thúc Đêm chỉ cho cảnh benchmark; trò chơi thường không đổi.
+- Server chạy được với `--host`; dừng lỗi ồn khi trình duyệt đóng kết nối.
+
 ## Phase 3 — "Đèn cạn dầu" (Contract v1.2, tag `phase-3`)
 
 ### Thay đổi phá vỡ tương thích (breaking)

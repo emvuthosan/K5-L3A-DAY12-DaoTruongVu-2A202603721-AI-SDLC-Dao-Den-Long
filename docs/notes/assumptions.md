@@ -57,3 +57,20 @@ Giả định thêm (chỗ ticket chưa nói):
 | 34 | `deposited` | Đèn tắt: 0. Đèn sáng: giữ giá trị chi phí đã nạp (10 hoặc 5). |
 | 35 | Scenario đèn | `fuel` chỉ có nghĩa khi `lit: true`; `ever_lit` mặc định = `lit`; `lit:false, ever_lit:true` là đèn đã tắt (thắp lại = 5). |
 | 36 | Điểm `per_second_left` | Giữ khóa trong contract với giá trị 0 ("bỏ thưởng thời gian"). |
+
+
+---
+
+# Phase 4 (Ticket-04, Contract v1.3): giả định mới
+
+| # | Chỗ mơ hồ | Giả định |
+|---|---|---|
+| 37 | Đo benchmark trên bản web | Bản chơi là web (Python server + three.js), nên `bench_cmd` tự mở trình duyệt Chromium-family (Chrome/Edge/Chromium; `--browser` hoặc `$BENCH_BROWSER` để chỉ định) với `--disable-gpu-vsync --disable-frame-rate-limit`. Cửa sổ thật, không headless. `vsync_off` ghi `true` theo cờ đã truyền (không thể kiểm tra từ trang web). |
+| 38 | Độ phân giải | Canvas luôn 1280×720 pixel (pixel ratio 1) trong bench, kể cả khi vùng nhìn của cửa sổ nhỏ hơn. |
+| 39 | `dt` từng khung | Hiệu hai mốc `requestAnimationFrame` liên tiếp, và mỗi khung gọi `readPixels` 1 pixel để chờ GPU xong (nếu không, trình duyệt trả rAF trước khi GPU vẽ xong và FPS bị phóng đại). |
+| 40 | `load_ms` | Từ lúc tiến trình Python bắt đầu (kể cả khởi động server và trình duyệt) tới khi trình duyệt báo đã vẽ khung đầu của cảnh bench. |
+| 41 | `peak_mem_mb` | Tổng RSS (working set trên Windows) của cây tiến trình trình duyệt, lấy mẫu mỗi giây trong lúc đo. Không gồm tiến trình Python của server. |
+| 42 | Cảnh bench | 200 Bóng Mực và 100 đom đóm đặt theo xoắn ốc góc vàng + nhiễu nhỏ theo seed (rải đều); Bóng Mực vẫn theo luật wander (đi tới đèn tắt gần nhất L4/L5 vì L1–L3 đủ dầu), nên dần tụ lại ở đó. |
+| 43 | Soak | Đêm i (i = 1..N) dùng Đêm `(i−1) mod 3 + 1` và seed `seed + i`; mỗi 30 tick chọn hướng ngẫu nhiên (10% đứng yên); `mem_end` đo sau khi giải phóng cảnh cuối và `gc.collect()`. RSS là của tiến trình Python (chỉ logic, không có đồ họa). |
+| 44 | Bảng xếp hạng | `score` = tổng điểm các Đêm đã thắng, `nights_won` = số Đêm đã thắng, `seed` = seed của Đêm cuối cùng đã chơi. Tên chấp nhận thêm chữ Latin có dấu. Lưu ở `data/leaderboard.json` (hoặc `$DDL_DATA_DIR`). |
+| 45 | Đổi phím | Hành động tạm dừng chỉ có một phím (mặc định `Esc`). Phím trùng bị từ chối kèm cảnh báo. Mũi tên trái/phải xoay camera là cố định. |

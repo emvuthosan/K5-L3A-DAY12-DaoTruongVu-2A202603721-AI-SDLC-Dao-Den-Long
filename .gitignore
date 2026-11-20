@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .env
 out.jsonl
+data/
+dist/
+bench_soak_tmp.json

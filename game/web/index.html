@@ -5,36 +5,51 @@
 <title>Đảo Đèn Lồng</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-  :root{--sky:#0E1430;--mist:#1B2350;--warm:#FFB347;--core:#FFE9B0;--gold:#F2C14E;--danger:#FF5A5F;--ui:#F5F1E6}
+  /* every text size is a multiple of 1rem = 18px (x1.25 with "Chữ lớn"), so no UI text is below 18 px */
+  :root{--sky:#0E1430;--mist:#1B2350;--warm:#FFB347;--core:#FFE9B0;--gold:#F2C14E;--danger:#FF5A5F;--ui:#F5F1E6;--scale:1}
+  html{font-size:calc(18px * var(--scale))}
   html,body{margin:0;height:100%;overflow:hidden;background:var(--sky);font-family:system-ui,"Segoe UI",sans-serif;color:var(--ui)}
   canvas{display:block}
-  .hud{position:fixed;pointer-events:none;text-shadow:0 0 6px #000;font-size:18px}
-  #flames{top:14px;left:16px;font-size:30px;color:var(--danger);letter-spacing:4px}
-  #clock{top:12px;left:50%;transform:translateX(-50%);font-size:34px;font-weight:700;font-variant-numeric:tabular-nums}
+  button,input,select,textarea{font-family:inherit;font-size:1rem}
+  .hud{position:fixed;pointer-events:none;text-shadow:0 0 6px #000;font-size:1rem}
+  #flames{top:12px;left:16px;font-size:1.6rem;color:var(--danger);letter-spacing:4px}
+  #clock{top:10px;left:50%;transform:translateX(-50%);font-size:1.9rem;font-weight:700;font-variant-numeric:tabular-nums}
   #clock.low{color:var(--danger);animation:blink .5s steps(2) infinite}
   @keyframes blink{50%{opacity:.25}}
-  #right{top:14px;right:16px;text-align:right;line-height:1.5}
+  #right{top:12px;right:16px;text-align:right;line-height:1.5}
   #right b{color:var(--gold)}
-  #bar{bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:4px}
-  #bar i{width:22px;height:22px;border:2px solid var(--gold);border-radius:50%;background:transparent;box-sizing:border-box}
+  #bar{bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:4px;align-items:center}
+  #bar i{width:1.1rem;height:1.1rem;border:2px solid var(--gold);border-radius:50%;box-sizing:border-box}
   #bar i.on{background:radial-gradient(#FFF6C2,#FFE58A);box-shadow:0 0 8px #FFE58A}
-  #cds{bottom:16px;right:16px;display:flex;gap:10px}
-  .cd{position:relative;width:62px;height:62px;border:2px solid var(--gold);border-radius:10px;background:rgba(14,20,48,.7);overflow:hidden;text-align:center;font-size:12px}
-  .cd span{position:absolute;inset:auto 0 4px 0}.cd em{position:absolute;top:6px;left:0;right:0;font-style:normal;font-size:20px}
+  #cds{bottom:14px;right:16px;display:flex;gap:10px}
+  .cd{position:relative;min-width:4.4rem;height:3.6rem;border:2px solid var(--gold);border-radius:10px;background:rgba(14,20,48,.75);overflow:hidden;text-align:center;font-size:1rem;padding:0 6px}
+  .cd span{position:absolute;inset:auto 0 4px 0}.cd em{position:absolute;top:2px;left:0;right:0;font-style:normal;font-size:1.3rem}
   .cd .fill{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);height:0}
   .cd.ready{box-shadow:0 0 10px var(--warm)}
-  #prompt{bottom:70px;left:50%;transform:translateX(-50%);font-size:20px;color:var(--core);display:none}
-  #msg{bottom:110px;left:16px;font-size:15px;opacity:.9;line-height:1.5}
-  #warn{top:70px;left:50%;transform:translateX(-50%);color:#8FA3B8;font-size:22px;display:none}
-  #arrow{position:fixed;width:0;height:0;pointer-events:none;display:none;border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:34px solid var(--warm);filter:drop-shadow(0 0 6px #000)}
+  #prompt{bottom:4rem;left:50%;transform:translateX(-50%);font-size:1.2rem;color:var(--core);display:none}
+  #msg{bottom:5rem;left:16px;line-height:1.5}
+  #cue{top:3.4rem;left:50%;transform:translateX(-50%);text-align:center;line-height:1.5;font-size:1.1rem}
+  #cue div{background:rgba(14,20,48,.8);border:2px solid var(--gold);border-radius:8px;padding:2px 12px;margin-top:4px}
+  .arrow{position:fixed;width:0;height:0;pointer-events:none;display:none;border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:34px solid var(--warm);filter:drop-shadow(0 0 6px #000)}
+  #sarrow{border-bottom-color:#B58CFF}
   #flash{position:fixed;inset:0;background:#5a1f8a;opacity:0;pointer-events:none;transition:opacity .3s}
-  .screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:rgba(14,20,48,.82);gap:14px}
-  .screen h1{margin:0;font-size:46px;color:var(--warm);text-shadow:0 0 18px #FFB34788}
-  .screen h2{margin:0;font-size:32px;color:var(--gold)}
-  .screen p{margin:0;max-width:520px;font-size:19px;line-height:1.5}
-  .screen button{font-size:20px;padding:10px 28px;border:0;border-radius:8px;background:var(--warm);color:#1b1230;cursor:pointer;min-width:240px}
+  .screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:rgba(14,20,48,.88);gap:12px;overflow:auto}
+  .screen h1{margin:0;font-size:2.4rem;color:var(--warm);text-shadow:0 0 18px #FFB34788}
+  .screen h2{margin:0;font-size:1.7rem;color:var(--gold)}
+  .screen p{margin:0;max-width:34rem;font-size:1rem;line-height:1.5}
+  .screen button{font-size:1.1rem;padding:8px 24px;border:0;border-radius:8px;background:var(--warm);color:#1b1230;cursor:pointer;min-width:13rem}
   .screen button.alt{background:var(--mist);color:var(--ui);border:1px solid var(--gold)}
-  .screen label{font-size:18px;display:flex;gap:12px;align-items:center}
+  .screen label{font-size:1rem;display:flex;gap:12px;align-items:center}
+  .screen input[type=text]{font-size:1.1rem;padding:6px 10px;border-radius:6px;border:2px solid var(--gold);background:#0b1026;color:var(--ui);width:11rem}
+  table{border-collapse:collapse;font-size:1rem}
+  td,th{padding:4px 14px;border-bottom:1px solid #2a3470;text-align:left}
+  .keyrow{display:flex;gap:12px;align-items:center;justify-content:space-between;width:22rem;font-size:1rem}
+  .keyrow button{min-width:8rem;padding:4px 10px}
+  .warn{color:var(--danger);min-height:1.5em;font-size:1rem}
+  #saveBox{display:none;flex-direction:column;gap:6px;align-items:center}
+  #saveBox button{font-size:1.1rem;padding:8px 24px;border:0;border-radius:8px;background:var(--warm);color:#1b1230;cursor:pointer}
+  #saveBox input{font-size:1.1rem;padding:6px 10px;border-radius:6px;border:2px solid var(--gold);background:#0b1026;color:var(--ui);width:11rem}
+  #saveBox label{display:flex;gap:10px;align-items:center;font-size:1rem}
 </style>
 </head>
 <body>
@@ -42,16 +57,17 @@
 <div id="clock" class="hud"></div>
 <div id="right" class="hud"></div>
 <div id="bar" class="hud"></div>
-<div id="cds" class="hud"><div class="cd" id="cdDash"><em>»</em><span>Lướt · Shift</span><div class="fill"></div></div><div class="cd" id="cdPulse"><em>✺</em><span>Tỏa Sáng · F</span><div class="fill"></div></div></div>
+<div id="cds" class="hud"><div class="cd" id="cdDash"><em>»</em><span id="kDash">Shift</span><div class="fill"></div></div><div class="cd" id="cdPulse"><em>✺</em><span id="kPulse">F</span><div class="fill"></div></div></div>
 <div id="prompt" class="hud"></div>
 <div id="msg" class="hud"></div>
-<div id="warn" class="hud">Gió sắp nổi... lá đang bay</div>
-<div id="arrow"></div>
+<div id="cue" class="hud"></div>
+<div id="arrow" class="arrow"></div>
+<div id="sarrow" class="arrow"></div>
 <div id="flash"></div>
 
-<div id="sMenu" class="screen"><h1>Đảo Đèn Lồng</h1><p>Mây, người giữ đèn nhỏ tuổi, phải thắp lại các Đèn Lồng Lớn trước khi bình minh.</p>
-  <button id="bStart">Bắt đầu</button><button id="bSet1" class="alt">Cài đặt</button>
-  <p style="font-size:14px;opacity:.7">WASD di chuyển · Space nhảy · Shift lướt · E nạp ánh sáng · F tỏa sáng · Esc/P tạm dừng · kéo chuột xoay camera</p></div>
+<div id="sMenu" class="screen"><h1>Đảo Đèn Lồng</h1><p>Mây, người giữ đèn nhỏ tuổi, phải giữ các Đèn Lồng Lớn sáng tới bình minh.</p>
+  <button id="bStart">Bắt đầu</button><button id="bLb" class="alt">Bảng xếp hạng</button><button id="bSet1" class="alt">Cài đặt</button>
+  <p id="menuHint" style="opacity:.8"></p></div>
 <div id="sIntro" class="screen"><h2 id="iName"></h2><p id="iText"></p><button id="bBegin">Vào đêm</button></div>
 <div id="sResult" class="screen"><h2 id="rTitle"></h2><p id="rText"></p><button id="bNext">Đêm kế tiếp</button><button id="bRetry" class="alt">Chơi lại đêm này</button><button id="bMenu1" class="alt">Về menu</button></div>
 <div id="sDawn" class="screen"><h1>Bình Minh</h1><p id="dText"></p><button id="bMenu2">Về menu</button></div>
@@ -60,7 +76,14 @@
   <label>Âm lượng <input id="vol" type="range" min="0" max="100"><span id="volV"></span></label>
   <label>Độ nhạy chuột <input id="sens" type="range" min="10" max="100"><span id="sensV"></span></label>
   <label><input id="cb" type="checkbox"> Bảng màu dễ phân biệt</label>
-  <button id="bSetBack">Xong</button></div>
+  <label><input id="rm" type="checkbox"> Giảm chuyển động (tắt rung và chớp màn hình)</label>
+  <label><input id="big" type="checkbox"> Chữ lớn (×1.25)</label>
+  <button id="bKeys" class="alt">Đổi phím</button><button id="bSetBack">Xong</button></div>
+<div id="sKeys" class="screen"><h2>Đổi phím</h2><div id="keyList"></div><div id="keyWarn" class="warn"></div>
+  <button id="bKeyReset" class="alt">Khôi phục mặc định</button><button id="bKeysBack">Xong</button></div>
+<div id="sLb" class="screen"><h2>Bảng xếp hạng</h2><div id="lbTable"></div><button id="bLbBack">Quay lại</button></div>
+<div id="saveBox"><label>Tên (3–12 ký tự: chữ, số, _) <input id="nameIn" type="text" maxlength="12" autocomplete="off"></label>
+  <button id="bSave">Lưu điểm</button><div id="saveMsg" class="warn"></div></div>
 <script type="module" src="main.js"></script>
 </body>
 </html>

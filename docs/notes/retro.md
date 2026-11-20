@@ -1,30 +1,45 @@
-# Đánh giá và retro
+# Retro và đánh giá 4 phase — Đảo Đèn Lồng
 
-## Phase 1 — đánh giá
-- **Đạt:** luật lõi PRD-0 (nhặt, nạp, thắp, Bóng Mực, tỏa sáng, thắng/thua, điểm), headless theo Test Contract v1.0, tính tất định, exit 2 khi file hỏng. Bằng chứng: `docs/proof/README.md`.
-- **Chưa kiểm / chưa có:** chưa chơi hết một ván thắng bằng tay trên giao diện; chưa có video; chưa đo hiệu năng; `dash` và sự kiện rơi không có.
-- **Hỏng phase trước:** không áp dụng (phase đầu).
-- **Cần chỉnh:** nếu Phase 2 đổi luật, sửa test kèm lý do trong `docs/notes/`.
-- Token Phase 1: ước tính 150–200k (xem `ai-log.md`).
+Con số token/chi phí bên dưới là **ước tính** của tôi (phiên làm việc không cung cấp bộ đếm token), không phải số đo.
 
-## Phase 2 — đánh giá
-- **Đạt:** toàn bộ số liệu chuẩn, 3 bản đồ, lướt, rơi, Gió Lạc, Bùa Gió, bục nhảy, gió, tạm dừng, contract v1.1; 46 test + 14 scenario; một Đêm headless 1.45 s (ngưỡng 30 s).
-- **Chưa kiểm:** ván thắng ba Đêm bằng tay trên giao diện, âm thanh bằng tai, màu pixel (xem `docs/proof/README.md`).
-- **Hỏng phase trước:** không hỏng ngoài ý muốn; các luật Phase 1 bị ticket thay thế đã được viết lại kèm lý do (`assumptions.md`). Test Phase 1 cũ được đổi số chứ không tắt.
-- **Cần chỉnh:** thêm test tự động cho chuỗi Đêm của server; chơi thử toàn bộ trước khi tag.
-- Token Phase 2: ước tính 250–350k.
+## Đánh giá từng phase
 
-## Phase 3 — đánh giá
-- **Đạt:** nhiên liệu đèn, châm dầu, thắp lại, Bóng Mực hút dầu, luật thắng bình minh, sức chứa tăng dần, điểm mới, chế độ mù màu (một phần quan sát), contract v1.2; 77 test và 20 scenario; một Đêm dài nhất 2.64 s.
-- **Chưa kiểm:** các hiệu ứng thị giác (nhấp nháy, xẹp, ⚠), một Đêm trọn vẹn bằng tay (xem `docs/proof/README.md`).
-- **Hỏng phase trước:** chỉ những luật bị ticket thay thế; các test đó được sửa kèm lý do trong `CHANGELOG.md`, không có test bị skip. Phần còn lại của Phase 1–2 vẫn pass.
-- **Cần chỉnh:** giả định #31 (tốc độ wander có mục tiêu) là chỗ dễ lệch với bản chuẩn.
-- Token Phase 3: ước tính 150–250k. Tiết kiệm nhờ vá có kiểm assert thay vì viết lại.
+| Phase | Đạt | Chưa kiểm / chưa đạt | Hỏng phase trước? | Token ước tính |
+|---|---|---|---|---|
+| 1 — Đêm 1 (Contract v1.0) | Luật lõi, headless, tất định, exit 2; 21 test | Chưa chơi trọn ván trên giao diện | — | 150–200k |
+| 2 — Ba hòn đảo (v1.1) | Số liệu chuẩn, 3 bản đồ, lướt/rơi/Gió Lạc/Bùa Gió/bục nhảy/gió/tạm dừng; 46 test, 14 scenario; một Đêm headless 1.4 s | Âm thanh chưa nghe, màu chưa đo pixel | Luật Phase 1 bị ticket thay: viết lại test kèm lý do | 250–350k |
+| 3 — Đèn cạn dầu (v1.2) | Dầu số nguyên, thắp lại, Bóng Mực hút dầu, thắng ở bình minh, sức chứa, điểm mới, mù màu; 77 test, 20 scenario | Hiệu ứng nhấp nháy/xẹp/⚠ chưa quan sát | Chỉ các luật bị thay; sửa/thay test có ghi trong CHANGELOG, không skip | 150–250k |
+| 4 — Bình minh (v1.3) | Benchmark, soak, bảng xếp hạng, đổi phím, phụ đề, giảm chuyển động, chữ ≥ 18 px, đóng gói; 89 test | Video demo chưa quay; chưa kiểm trên máy chấm/macOS/Linux | Không | 300–400k |
 
-## Phase 4
-Chưa thực hiện (ticket chưa phát hành). Không có tag `phase-4` và Release `v1.0.0`.
+Tổng ước tính **0.85–1.2 triệu token** cho cả dự án, chủ yếu là sinh mã và đọc lại tài liệu.
 
-## Retro tạm thời
-- Hiệu quả: một `Sim` dùng chung cho headless và bản chơi; viết test trước khi tin code; scenario chạy thật bắt được lỗi scenario của chính mình.
-- Khó: môi trường không có Node nên chọn Python; lệnh shell dài dễ lỗi.
-- Nếu làm lại: chơi thử bằng tay sớm hơn, thêm snapshot kiểm tra giao diện tự động.
+## Điều gì hiệu quả
+- **Một nơi duy nhất chứa luật** (`game/sim.py`, không I/O). Headless, server, soak và benchmark dùng chung; client chỉ vẽ. Nhờ vậy mỗi ticket đổi luật chỉ chạm một chỗ và bản chơi không thể lệch với headless.
+- **Viết kiểm chứng cùng lúc với luật** (test + scenario headless chạy thật) bắt được cả lỗi của AI lẫn lỗi hiểu ticket. `run_proof.py` biến bằng chứng thành thứ chạy lại được và khớp tag.
+- **Ghi giả định thay vì đoán ngầm** (`assumptions.md`, 45 mục): chỗ ticket bỏ ngỏ có nơi ghi, và phase sau dễ biết chỗ nào cần đổi.
+- **Dầu bằng số nguyên 1/60** (ADR-0003): ngưỡng "đúng 30" và "tắt đúng tick 6000" chính xác, không cần dung sai.
+
+## Điều gì không hiệu quả
+- Lệnh shell dài nhiều dấu nháy lỗi cú pháp lặp lại ở mỗi phase; cách chữa (ghi script ra file rồi chạy) lẽ ra phải vào AGENTS.md sớm hơn.
+- Kiểm giao diện chỉ làm được từng phần (không có người chơi thật, không nghe được âm thanh, không quay được video).
+- Benchmark trên bản web phụ thuộc trình duyệt và không tắt vsync được từ trang; xem giả định #37–39.
+
+## Những lần AI sai và cách phát hiện
+1. **Test do AI viết sai** (Phase 2–3: bóng ngoài tầm 12 m, khoảng cách 3D của Tỏa Sáng, đèn bị chính lệnh châm dầu làm đầy): test đỏ → đối chiếu từng chỗ với ticket → sửa test hoặc luật, không nới assert.
+2. **Lỗi thật trong sim:** Gió Lạc sinh ở Đêm 1 (Phase 2), Bóng Mực `drain` vẫn hút dầu lúc đang bị đẩy ra (Phase 3). Bắt được nhờ test theo từng câu của ticket và rà ticket-so-với-mã trước khi chạy.
+3. **Đo sai hiệu năng:** lần đầu benchmark báo ≈1800 FPS vì `requestAnimationFrame` trả về trước khi GPU vẽ xong; thêm `readPixels` mỗi khung để chờ GPU (còn ≈430 FPS). Phát hiện nhờ nghi ngờ con số quá đẹp.
+4. **Ghi "đạt" quá tay:** nhiều lần phải hạ xuống "đạt một phần / chưa quan sát" khi tự rà bảng bằng chứng (ví dụ ⚠ trên HUD, âm thanh, video).
+
+## Harness nào giúp nhiều nhất
+- **`AGENTS.md`** ngắn (quy ước tick, RNG riêng từng tính năng, dầu số nguyên, `_zone`) giúp các lần sửa sau không phá ngầm các luật cũ.
+- **Skill `verify`** gói đúng chuỗi "unit test → scenario → tất định → đo thời gian".
+- **Hook Stop chạy test** ngăn kết thúc khi test đỏ. **CI** chạy lại test và `run_proof.py` mỗi lần push.
+
+## Token và cách tiết kiệm
+Đọc tài liệu một lần; một `Sim` dùng chung thay vì viết hai lần (Python + JS); vá có `assert` thay vì viết lại khi phase đổi luật nhỏ; test gom theo file; không dùng subagent; không để agent chạy vòng lặp dài. Đốt thêm token không làm bài tốt hơn; phần đắt nhất là viết lại `sim.py` ở Phase 2 (ticket đổi gần mọi số liệu).
+
+## Nếu làm lại
+- Đưa vào AGENTS.md ngay từ Phase 1: "ghi script ra file thay vì heredoc dài" và "mọi bằng chứng giao diện cần ảnh + số đo".
+- Chọn engine có benchmark gốc (hoặc đóng gói sẵn một trình duyệt cố định) để số đo không phụ thuộc trình duyệt của máy chấm.
+- Làm khung kiểm thử giao diện tự động sớm (chụp ảnh khung hình để so), thay vì kiểm tay từng phần.
+- Quay video demo song song với từng phase thay vì để dồn cuối.

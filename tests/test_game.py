@@ -45,7 +45,7 @@ def collect(s, n, **inp):
 class Contract(unittest.TestCase):
     def test_v12_values(self):
         # Phase 3 [THAY THẾ]: v1.2 changes the night durations and the score table (see docs/notes/ADR-0003).
-        self.assertEqual(C["contract_version"], "1.2")
+        self.assertEqual(C["contract_version"], "1.3")   # v1.3 (Phase 4) keeps every v1.2 value below
         std = dict(player_speed=6.0, carry_capacity=10, lantern_cost=10, lantern_count_night1=5,
                    pickup_radius=1.0, interact_radius=2.0, pulse_cost=3, pulse_radius=5.0,
                    night1_duration_s=240, night2_duration_s=270, night3_duration_s=300, flames=3,

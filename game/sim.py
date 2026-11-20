@@ -117,6 +117,29 @@ def night_cfg(n):
         drifters=True, wind=True)
 
 
+def bench_scenario(seed=42):
+    """Ticket-04 benchmark scene: night 1, 200 wandering shades and 100 motes spread evenly (seeded
+    golden-angle spiral with a little jitter), lanterns L1-L3 lit with fuel 100, player idle at the origin."""
+    rng = random.Random(seed)
+    ga = math.pi * (3.0 - math.sqrt(5.0))
+
+    def spiral(n, radius):
+        out = []
+        off = rng.random() * 2 * math.pi
+        for i in range(n):
+            r = radius * math.sqrt((i + 0.5) / n)
+            a = off + i * ga
+            out.append([round(r * math.cos(a) + (rng.random() - .5), 3), 0.0,
+                        round(r * math.sin(a) + (rng.random() - .5), 3)])
+        return out
+
+    return {"player": {"pos": [0, 0, 0]},
+            "lanterns": [{"id": f"L{i}", "lit": True, "fuel": 100} for i in (1, 2, 3)],
+            "shades": [{"pos": p, "state": "wander"} for p in spiral(200, 38.0)],
+            "motes": spiral(100, 36.0), "random_motes": False, "random_shades": False,
+            "random_drifters": False, "wind_enabled": False}
+
+
 def _pos(v, what):
     if (not isinstance(v, (list, tuple)) or len(v) not in (2, 3)
             or any(isinstance(c, bool) or not isinstance(c, (int, float)) for c in v)):
@@ -137,7 +160,7 @@ def _int(v, what):
 
 
 class Sim:
-    def __init__(self, seed=0, scenario=None, contract=None, extras=False, night=1):
+    def __init__(self, seed=0, scenario=None, contract=None, extras=False, night=1, bench=False):
         if night not in (1, 2, 3):
             raise ScenarioError("night must be 1, 2 or 3")
         c = contract or load_contract()
@@ -151,7 +174,8 @@ class Sim:
         self.night = night
         self.cfg = cfg = night_cfg(night)
         self.seed = seed
-        self.extras = extras
+        self.extras = extras and not bench
+        self.bench = bench      # benchmark scene: no spawns, damage, pickups, fuel decay or end (Ticket-04)
         # separate RNG streams so optional features never perturb each other
         self.r_mote = random.Random(seed * 7919 + 1)
         self.r_shade = random.Random(seed * 7919 + 2)
@@ -248,6 +272,8 @@ class Sim:
         self.random_shades = bool(sc.get("random_shades", not has("shades")))
         self.random_drifters = bool(sc.get("random_drifters", cfg["drifters"] and not has("drifters")))
         self.wind_enabled = bool(sc.get("wind_enabled", cfg["wind"]))
+        if bench:
+            self.random_motes = self.random_shades = self.random_drifters = self.wind_enabled = False
         if has("motes"):
             if not isinstance(sc["motes"], list):
                 raise ScenarioError("motes must be a list")
@@ -451,7 +477,7 @@ class Sim:
             if s["state"] == "drain" and s["target"]:
                 drainers.setdefault(s["target"], []).append(s)
         for l in self.lanterns:
-            if not l["lit"]:
+            if not l["lit"] or self.bench:
                 continue
             ds = drainers.get(l["id"], [])
             l["fu"] -= self.decay_u + self.drain_u * len(ds)
@@ -494,7 +520,7 @@ class Sim:
                 frozen = True
 
         # 4. pickups
-        if not frozen:
+        if not frozen and not self.bench:
             for m in list(self.motes):
                 if self.carried >= self.capacity():
                     break
@@ -595,7 +621,7 @@ class Sim:
         self._move_drifters()
 
         # 9. contacts: drifters steal first, then shades hit (by id)
-        if not frozen:
+        if not frozen and not self.bench:
             for d in sorted(self.drifters, key=lambda d: d["n"]):
                 if d["state"] in ("idle", "chase") and self.carried > 0 \
                         and math.hypot(self.px - d["x"], self.pz - d["z"]) <= 1.2:
@@ -656,6 +682,8 @@ class Sim:
             x, z = self.r_drift.choice(cfg["shades"])
             self._add_drifter(x, z)
 
+        if self.bench:
+            return
         # 11. win / lose (after every update of the tick, including the dawn tick)
         if self.flames <= 0:
             self._finish("lost", "no_flames")
