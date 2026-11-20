@@ -43,18 +43,22 @@ def collect(s, n, **inp):
 
 
 class Contract(unittest.TestCase):
-    def test_v11_values(self):
-        self.assertEqual(C["contract_version"], "1.1")
+    def test_v12_values(self):
+        # Phase 3 [THAY THẾ]: v1.2 changes the night durations and the score table (see docs/notes/ADR-0003).
+        self.assertEqual(C["contract_version"], "1.2")
         std = dict(player_speed=6.0, carry_capacity=10, lantern_cost=10, lantern_count_night1=5,
                    pickup_radius=1.0, interact_radius=2.0, pulse_cost=3, pulse_radius=5.0,
-                   night1_duration_s=300, night2_duration_s=330, night3_duration_s=360, flames=3,
+                   night1_duration_s=240, night2_duration_s=270, night3_duration_s=300, flames=3,
                    invuln_s=1.5, hit_drop_ratio=0.5, pulse_stun_s=2.0, pulse_push_m=4.0,
                    pulse_cooldown_s=3.0, safe_radius=6.0, shade_speed=4.0, shade_hit_radius=1.0,
-                   dash_speed=14.0, dash_duration_s=0.2, dash_cooldown_s=1.5)
+                   dash_speed=14.0, dash_duration_s=0.2, dash_cooldown_s=1.5, fuel_max=100, fuel_decay_per_s=1.0,
+                   fuel_per_mote=10, relight_cost=5, win_ratio=0.6, drain_per_s=5, low_fuel_threshold=30,
+                   capacity_max=20)
         for k, v in std.items():
             self.assertEqual(T[k], v, k)
         self.assertIn("fall_enabled", T)
-        for k, v in dict(per_mote=10, per_lantern=100, per_stun=5, per_second_left=2, per_flame_left=50).items():
+        for k, v in dict(per_mote=5, per_lantern=100, per_relight=40, per_stun=5, per_stun_drain=15,
+                         per_lit_dawn=50, per_flame_left=50, per_second_left=0).items():
             self.assertEqual(S[k], v, k)
 
 
@@ -160,12 +164,12 @@ class Lanterns(unittest.TestCase):
         s.step({"interact": True})
         self.assertEqual(s.carried, 0)
         self.assertTrue(s.lanterns[0]["lit"])
-        self.assertEqual(s.score, 10 * 10 + 100)
+        self.assertEqual(s.score, 10 * 5 + 100)   # Phase 3: +5 per mote, +100 first light
 
     def test_partial_and_min(self):
         s = mk(player={"pos": [0, 0, 25], "carried": 4})
         s.step({"interact": True})
-        self.assertEqual((s.carried, s.lanterns[0]["deposited"], s.score), (0, 4, 40))
+        self.assertEqual((s.carried, s.lanterns[0]["deposited"], s.score), (0, 4, 20))
         s.carried = 9
         s.step({"interact": False})
         s.step({"interact": True})
@@ -177,18 +181,14 @@ class Lanterns(unittest.TestCase):
         s.step({"interact": True})
         self.assertEqual((s.lanterns[0]["deposited"], s.lanterns[1]["deposited"]), (5, 0))
 
-    def test_win_score_and_exact_last_tick(self):
-        lan = [{"id": f"L{i}", "lit": True} for i in range(2, 6)]
-        s = mk(player={"pos": [0, 0, 25], "carried": 10}, lanterns=lan, time_left_s=50)
-        ev = collect(s, 1, interact=True)
-        self.assertEqual([e["name"] for e in ev], ["deposit", "lantern_lit", "game_over"])
-        self.assertEqual(ev[-1]["data"], {"result": "won", "reason": "all_lit"})
-        left = int(50 - 1 / 60)
-        self.assertEqual(s.score, 100 + 100 + left * 2 + 3 * 50)
-        s = mk(player={"pos": [0, 0, 25], "carried": 10}, lanterns=lan, time_left_s=2 / 60)
+    def test_no_early_win_and_dawn_win(self):
+        # Phase 3 [THAY THẾ] "thắng ngay khi tất cả đèn sáng": lighting every lantern no longer ends the night.
+        lan = [{"id": f"L{i}", "lit": True} for i in range(1, 6)]
+        s = mk(lanterns=lan, time_left_s=1)
+        run(s, 59)
+        self.assertFalse(s.over)
         s.step({})
-        s.step({"interact": True})
-        self.assertEqual(s.result, "won")                           # wins on the very tick time runs out
+        self.assertEqual(s.events[-1]["data"], {"result": "won", "reason": "dawn_survived"})
 
     def test_lose_dawn_and_no_flames_priority(self):
         s = mk(time_left_s=1)
@@ -576,15 +576,16 @@ class Headless(unittest.TestCase):
             p, data = self.cli("--seed", "3", "--night", "3", "--ticks", "21600", "--scenario", sc)
             self.assertEqual(p.returncode, 0)
             self.assertLess(time.time() - t0, 30)
-            self.assertEqual(json.loads(data.splitlines()[-1])["ticks"], 21600)
+            self.assertEqual(json.loads(data.splitlines()[-1])["ticks"], 18000)   # night 3 = 300 s at dawn
 
     def test_phase1_scenario_still_wins(self):
         p, data = self.cli("--seed", "1", "--night", "1",
                            "--scenario", os.path.join(SCN, "win_two_trips.json"),
                            "--inputs", os.path.join(SCN, "win_two_trips.inputs.json"), "--ticks", "600")
         rows = [json.loads(l) for l in data.splitlines()]
-        self.assertEqual(rows[-1]["state"], "won")
+        self.assertEqual(rows[-1]["state"], "won")          # now at dawn (Phase 3), after both deposits
         self.assertEqual(sum(r["name"] == "deposit" for r in rows if r["type"] == "event"), 2)
+        self.assertEqual(rows[-1]["ticks"], 360)
 
 
 if __name__ == "__main__":

@@ -23,3 +23,16 @@ Lỗi của AI / lần sai trong phase này và cách phát hiện:
 2. Một lỗi thật: Gió Lạc sinh cả ở Đêm 1 khi bật cờ `random_drifters` (ticket: chỉ Đêm 2 và 3) → test `Drifters.test_spawn_schedule` bắt được, sửa trong `sim.py`.
 3. Ticket không nói điểm xuất phát Đêm 3 và nhiều chi tiết khác: ghi vào `assumptions.md` thay vì đoán ngầm.
 Harness chỉnh: AGENTS.md ghi rõ quy ước góc, luồng RNG và "một tính năng thêm không được đổi đầu ra headless"; skill `verify` chạy cả scenario phase 2.
+
+
+# Phase 3 (Ticket-03)
+
+Token Phase 3: **ước tính** 150–250k (sửa sim bằng patch có kiểm `assert`, test mới, client). Là ước tính.
+
+Quyết định: dầu lưu số nguyên 1/60 (ADR-0003) vì ticket yêu cầu rõ và vì ngưỡng "đúng 30" cần chính xác. Sửa `sim.py` bằng script vá có assert từng đoạn thay vì viết lại, để diff nhỏ và biết ngay nếu mỏ neo không khớp.
+
+Lỗi của AI / lần sai và cách phát hiện:
+1. Trạng thái `drain` còn tiếp tục hút dầu trong lúc bóng đang bị "đẩy ra" sau khi đèn được châm ≥ 30 (đọc lại luồng: vòng hút ở bước 2 đếm theo `state == "drain"`, còn nhánh đẩy ra `continue` trước khi đổi trạng thái). Phát hiện khi tự rà ticket-vs-code trước khi chạy test; sửa ở bước 6 (đổi về `wander` khi bắt đầu đẩy ra) và có test `test_refuel_expels_harmlessly`.
+2. Hai test của tôi viết sai kỳ vọng: pulse đặt bóng cách 5.0 m nhưng khoảng cách 3D (tâm +0.8) làm nó ngoài tầm; scenario headless có đèn L1 bị chính lệnh châm dầu làm đầy nên không bao giờ tắt. Test đỏ → đối chiếu với ticket → sửa test, không nới assert. Scenario `refuel` kỳ vọng 5 đom đóm nhưng đúng luật là 6 (hao dầu trước tương tác): sửa kỳ vọng + ghi giả định #29.
+3. Lệnh shell nhiều dấu nháy lại lỗi: chuyển sang ghi script vá ra file.
+Harness chỉnh: AGENTS.md ghi "đèn: dùng `_zone`, dầu là số nguyên 1/60"; skill `verify` trỏ tới `docs/proof/phase3`.

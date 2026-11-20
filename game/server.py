@@ -92,7 +92,9 @@ class Game:
                 snap.pop("type")
                 d.update(snap)
                 d["result"] = s.result
-                d["capacity"] = s.t["carry_capacity"]
+                d["capacity"] = s.capacity()
+                d["relight_cost"] = s.t["relight_cost"]
+                d["reason"] = s.reason
                 d["lantern_cost"] = s.t["lantern_cost"]
                 d["pulse_ready"] = s.pulse_cd == 0 and s.carried >= s.t["pulse_cost"]
                 d["wind_warn"] = (s.night == 3 and s.wind_enabled and not s.wind_active

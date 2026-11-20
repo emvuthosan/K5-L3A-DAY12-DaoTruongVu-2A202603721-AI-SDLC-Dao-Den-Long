@@ -1,5 +1,7 @@
 # Bằng chứng kiểm chứng
 
+> Mỗi mục Phase mô tả bản ở tag tương ứng. Phase 3 thay một số luật của Phase 1–2 (xem `CHANGELOG.md`); bằng chứng hiện hành nằm ở mục **Phase 3** và `docs/proof/phase3/`.
+
 > Phase 1 (tag `phase-1`) dùng Contract v1.0 và số liệu cũ; phần Phase 1 bên dưới mô tả bản ở tag đó, `docs/proof/phase1/` là đầu ra của tag đó. Phase 2 thay luật (xem `docs/notes/assumptions.md`), bằng chứng hiện hành nằm ở mục Phase 2 và `docs/proof/phase2/`.
 
 Tái tạo: `python3 -m unittest discover -s tests -q` và `python3 tests/run_proof.py` (đầu ra jsonl trong `docs/proof/phase1/` do chương trình sinh, không sửa tay). Máy: Windows 10, Python 3.11.9.
@@ -59,3 +61,32 @@ Máy: Windows 10, Python 3.11.9, trình duyệt trong app Claude Code. Tái tạ
 - Âm thanh/nhạc chưa nghe được trong phiên làm bài (chỉ nối sự kiện → WebAudio).
 - Bảng màu chuẩn có trong mã (`PAL`) nhưng chưa đo màu pixel bằng công cụ; ánh sáng môi trường theo công thức nhưng chưa đo.
 - Nhiều chi tiết ticket không nói rõ đã được tự giả định (xem `assumptions.md` #16–28); bộ test ẩn có thể chọn khác (ví dụ điểm xuất phát Đêm 3, `night_start` ở headless).
+
+
+## Phase 3 (Contract v1.2) — hiện hành
+
+Máy: Windows 10, Python 3.11.9. Tái tạo: `python3 -m unittest discover -s tests -q` (77 test) và `python3 tests/run_proof.py` (20 scenario + tính tất định 3 Đêm + đo thời gian; đầu ra jsonl trong `docs/proof/phase3/`, sinh bởi chương trình). Spec/AC: [../notes/spec-phase3.md](../notes/spec-phase3.md). ADR: [../notes/ADR-0003-fuel-and-dawn-rule.md](../notes/ADR-0003-fuel-and-dawn-rule.md).
+
+| Yêu cầu | Cách kiểm chứng | Bằng chứng | Kết quả |
+|---|---|---|---|
+| Dầu hao 1/s theo đơn vị nguyên, tắt đúng tick 6000, `lantern_out`, ever_lit | `Fuel.test_decay_exact_and_out` | unit test | Đạt |
+| Thắp lại 5 đom đóm (+40), chưa từng sáng 10 (+100), `lantern_lit.relight` | `test_relight_cost_and_score`, scenario `fuel_out_relight` | `phase3/fuel_out_relight.jsonl` (out tại tick 180, relight, điểm 65) | Đạt |
+| Châm dầu: công thức `ceil`, đèn đầy không được chọn, hòa theo id | `Fuel.test_refuel_formula`, `test_full_lantern_not_selected`, `refuel` | `phase3/refuel.jsonl` (6 đom đóm, fuel 100.0) | Đạt |
+| Vùng an toàn: đúng 30 còn, < 30 mất | `test_safe_zone_threshold`, `test_weak_lantern_*` | unit test | Đạt |
+| Bóng Mực hút dầu: chọn mục tiêu, drain cộng dồn, `fuel_drain`, các chuyển trạng thái, +15 | `Drain.*`, `drain` | `phase3/drain.jsonl` (đèn tắt tại tick 234) | Đạt |
+| Đẩy ra vô hại khi châm ≥ 30 | `test_refuel_expels_harmlessly` | unit test | Đạt |
+| Luật thắng: ngưỡng 3/5, 4/6, 5/7; không thắng sớm; `no_flames` ưu tiên; đèn cạn tick bình minh | `Win.*`, `dawn_win`, `dawn_lose` | `phase3/dawn_win.jsonl` (won, dawn_survived), `dawn_lose.jsonl` | Đạt |
+| Thời gian Đêm 240/270/300 | `Win.test_durations` | unit test | Đạt |
+| Sức chứa 10 + 2·lần thắp ≤ 20 | `Capacity.*`, `capacity` | 10 → 12 sau một lần thắp | Đạt |
+| Điểm mới (5/100/40/5/15, bình minh 50+floor(fuel), 50/lửa, bỏ thưởng thời gian) | `Win.test_dawn_score`, `Score` | unit test | Đạt |
+| Contract v1.2: tuning, snapshot, scenario, exit 2 | `Contract`, `test_phase3.Headless.*` | unit test | Đạt |
+| Tính tất định (seed 42 × 2, cả 3 Đêm) | `run_proof.py` | hash trùng | Đạt |
+| Đêm dài nhất (18 000 tick) headless ≤ 30 s | `run_proof.py` | 2.64 s | Đạt |
+| Hồi quy Phase 1–2 không bị thay thế | toàn bộ test Phase 1–2 còn lại + 14 scenario cũ | PASS | Đạt |
+| Giao diện: thanh dầu, vùng an toàn, "Đèn sáng k/n (cần m)", đang mang/sức chứa | chạy server với đèn đặt sẵn dầu 91.8/41.9/3.9, chụp ảnh | [phase3-fuel-hud.jpg](phase3-fuel-hud.jpg) | Đạt một phần |
+| Chế độ mù màu | bật checkbox trong trình duyệt | `--danger` đổi thành `#FFFFFF`, cài đặt lưu `cb:true` | Đạt một phần |
+
+**Chưa kiểm / chưa đạt (trung thực):**
+- Nhấp nháy 1 Hz, đèn xẹp 20% + vết rách, biểu tượng ⚠ và màu `#00B3FF` của viền/mắt Bóng Mực có trong mã nhưng chưa quan sát trực tiếp (ảnh chụp chỉ thấy thanh dầu, vùng an toàn và HUD).
+- Chưa chơi trọn một Đêm bằng tay tới bình minh trên giao diện (màn kết quả mới "Bình minh! giữ được k đèn" chưa được xem).
+- Một số chi tiết ticket để ngỏ đã tự giả định (`assumptions.md` #29–36); test ẩn có thể chọn khác (ví dụ tốc độ `wander` có mục tiêu).

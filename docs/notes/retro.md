@@ -14,8 +14,15 @@
 - **Cần chỉnh:** thêm test tự động cho chuỗi Đêm của server; chơi thử toàn bộ trước khi tag.
 - Token Phase 2: ước tính 250–350k.
 
-## Phase 3–4
-Chưa thực hiện (ticket chưa phát hành). Không có tag `phase-3`, `phase-4` và Release `v1.0.0`.
+## Phase 3 — đánh giá
+- **Đạt:** nhiên liệu đèn, châm dầu, thắp lại, Bóng Mực hút dầu, luật thắng bình minh, sức chứa tăng dần, điểm mới, chế độ mù màu (một phần quan sát), contract v1.2; 77 test và 20 scenario; một Đêm dài nhất 2.64 s.
+- **Chưa kiểm:** các hiệu ứng thị giác (nhấp nháy, xẹp, ⚠), một Đêm trọn vẹn bằng tay (xem `docs/proof/README.md`).
+- **Hỏng phase trước:** chỉ những luật bị ticket thay thế; các test đó được sửa kèm lý do trong `CHANGELOG.md`, không có test bị skip. Phần còn lại của Phase 1–2 vẫn pass.
+- **Cần chỉnh:** giả định #31 (tốc độ wander có mục tiêu) là chỗ dễ lệch với bản chuẩn.
+- Token Phase 3: ước tính 150–250k. Tiết kiệm nhờ vá có kiểm assert thay vì viết lại.
+
+## Phase 4
+Chưa thực hiện (ticket chưa phát hành). Không có tag `phase-4` và Release `v1.0.0`.
 
 ## Retro tạm thời
 - Hiệu quả: một `Sim` dùng chung cho headless và bản chơi; viết test trước khi tin code; scenario chạy thật bắt được lỗi scenario của chính mình.

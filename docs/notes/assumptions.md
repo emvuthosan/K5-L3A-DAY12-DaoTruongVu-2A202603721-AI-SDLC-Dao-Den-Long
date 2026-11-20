@@ -42,3 +42,18 @@ Giả định thêm (chỗ ticket chưa nói):
 | 26 | Sự kiện `night_start` | Headless ghi `night_start` (tick 0) ngay sau snapshot tick 0; sự kiện thiết lập khác vẫn không có. |
 | 27 | Nhiều thực thể mới | Trần 30 đom đóm tính cả đom đóm rơi; điểm trống = điểm sinh chưa có đom đóm ngẫu nhiên. `random_*` mặc định false nếu scenario cho danh sách tương ứng (`random_drifters` mặc định true từ Đêm 2). |
 | 28 | Snapshot | `player.invuln` là số tick còn lại (nguyên); `*_s` là giây. Có thêm trường phụ (facing, pos của bùa, state_ticks_left). |
+
+---
+
+# Phase 3 (Ticket-03, Contract v1.2): giả định mới
+
+| # | Chỗ mơ hồ | Giả định |
+|---|---|---|
+| 29 | Dầu trong tick châm | Hao dầu ở bước 2 xảy ra **trước** tương tác (đúng thứ tự ticket), nên đèn "100 − x" mới hao 1/60 trước khi tính `ceil((100 − fuel)/10)`. |
+| 30 | Đèn đầy dầu | "Đầy" = `fuel == 100` chính xác (đơn vị 1/60). Đèn vừa hao 1/60 vẫn nhận được 1 đom đóm. |
+| 31 | Tốc độ `wander` có mục tiêu | Đi tới mục tiêu bằng tốc độ Bóng Mực đầy đủ (4/4.5 m/s); chỉ khi không có mục tiêu mới đi ngẫu nhiên nửa tốc độ. Dừng cách đèn yếu 2 m (rồi `drain`) hoặc đứng tại đèn tắt. |
+| 32 | `drain` → `chase` | Xét trước điều kiện về `wander`; "Mây vào trong 6 m" đo từ Bóng Mực tới Mây (XZ). Bóng drain mà đèn được châm ≥ 30 thì về `wander` ngay khi bị đẩy ra. |
+| 33 | `fuel_drain` | Phát ở bước 2 mỗi khi bộ đếm hút của một con chạm bội số 60 (tick 60, 120, … kể từ lúc vào `drain`), `fuel` là dầu sau khi hút, làm tròn 1 chữ số. |
+| 34 | `deposited` | Đèn tắt: 0. Đèn sáng: giữ giá trị chi phí đã nạp (10 hoặc 5). |
+| 35 | Scenario đèn | `fuel` chỉ có nghĩa khi `lit: true`; `ever_lit` mặc định = `lit`; `lit:false, ever_lit:true` là đèn đã tắt (thắp lại = 5). |
+| 36 | Điểm `per_second_left` | Giữ khóa trong contract với giá trị 0 ("bỏ thưởng thời gian"). |
