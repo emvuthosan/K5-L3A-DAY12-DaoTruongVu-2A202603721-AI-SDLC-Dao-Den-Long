@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -m unittest discover -s tests -q 1>&2 || exit 2"
+          }
+        ]
+      }
+    ]
+  }
+}

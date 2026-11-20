@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Đảo Đèn Lồng</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#0b0716;font-family:system-ui,sans-serif;color:#ffe9c2}
+  canvas{display:block}
+  #hud{position:fixed;top:12px;left:14px;font-size:18px;line-height:1.5;text-shadow:0 0 6px #000;pointer-events:none}
+  #hud b{color:#ffb347}
+  #log{position:fixed;bottom:14px;left:14px;font-size:14px;opacity:.85;text-shadow:0 0 6px #000;pointer-events:none}
+  #help{position:fixed;top:12px;right:14px;font-size:13px;text-align:right;opacity:.75;pointer-events:none}
+  #over{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
+        background:rgba(8,4,18,.72);font-size:28px;text-align:center}
+  #over button{margin-top:18px;font-size:20px;padding:10px 26px;border:0;border-radius:8px;background:#ffb347;cursor:pointer}
+  #flash{position:fixed;inset:0;background:#5a1f8a;opacity:0;pointer-events:none;transition:opacity .35s}
+</style>
+</head>
+<body>
+<div id="hud"></div>
+<div id="help">WASD: di chuyển · Space: nhảy · E: thắp đèn · F: tỏa sáng<br>Chuột kéo / ← →: xoay camera · R: chơi lại</div>
+<div id="log"></div>
+<div id="flash"></div>
+<div id="over"><div id="overtxt"></div><button id="again">Chơi lại (R)</button></div>
+<script type="module">
+import * as THREE from "./three.module.min.js";
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0716);
+scene.fog = new THREE.FogExp2(0x120a20, 0.015);
+const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 200);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+scene.add(new THREE.HemisphereLight(0x8a7ac0, 0x3a2a60, 1.3));
+const ground = new THREE.Mesh(new THREE.CylinderGeometry(30, 30, 1, 48),
+  new THREE.MeshStandardMaterial({ color: 0x5a4a80, roughness: 1 }));
+ground.position.y = -0.5; scene.add(ground);
+const cloud = new THREE.Mesh(new THREE.CylinderGeometry(70, 70, 0.2, 40),
+  new THREE.MeshBasicMaterial({ color: 0x241a3d, transparent: true, opacity: 0.8 }));
+cloud.position.y = -3; scene.add(cloud);
+
+// Mây: body + conical hat + little lantern on the hat
+const may = new THREE.Group();
+const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 0.7, 4, 10), new THREE.MeshStandardMaterial({ color: 0xf2d7b0 }));
+body.position.y = 0.75; may.add(body);
+const hat = new THREE.Mesh(new THREE.ConeGeometry(0.6, 0.8, 12), new THREE.MeshStandardMaterial({ color: 0xc98a3d }));
+hat.position.y = 1.65; may.add(hat);
+const hatLamp = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 10), new THREE.MeshBasicMaterial({ color: 0xffb347 }));
+hatLamp.position.set(0.5, 1.35, 0); may.add(hatLamp);
+const mayLight = new THREE.PointLight(0xffa640, 2.2, 14); mayLight.position.y = 1.5; may.add(mayLight);
+scene.add(may);
+const pulseRing = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 48), new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, side: THREE.DoubleSide }));
+pulseRing.rotation.x = -Math.PI / 2; pulseRing.visible = false; scene.add(pulseRing);
+
+const lanternMeshes = {}, moteMeshes = new Map(), shadeMeshes = new Map();
+const moteGeo = new THREE.SphereGeometry(0.16, 8, 8);
+const moteMat = new THREE.MeshBasicMaterial({ color: 0xffe36b });
+const goldMat = new THREE.MeshBasicMaterial({ color: 0xfff6c0 });
+const shadeGeo = new THREE.IcosahedronGeometry(0.6, 1);
+const shadeMat = new THREE.MeshStandardMaterial({ color: 0x120818, emissive: 0x3a0d5c, roughness: 0.5 });
+const stunMat = new THREE.MeshStandardMaterial({ color: 0x4b4b66, emissive: 0x222244 });
+
+function makeLantern() {
+  const g = new THREE.Group();
+  const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 2.6, 8), new THREE.MeshStandardMaterial({ color: 0x5a4636 }));
+  pillar.position.y = 1.3; g.add(pillar);
+  const orb = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16), new THREE.MeshStandardMaterial({ color: 0x222, emissive: 0x000000 }));
+  orb.position.y = 3.2; g.add(orb);
+  const light = new THREE.PointLight(0xffa640, 0, 18); light.position.y = 3.2; g.add(light);
+  const zone = new THREE.Mesh(new THREE.RingGeometry(3.85, 4, 48), new THREE.MeshBasicMaterial({ color: 0xffa640, transparent: true, opacity: 0, side: THREE.DoubleSide }));
+  zone.rotation.x = -Math.PI / 2; zone.position.y = 0.05; g.add(zone);
+  scene.add(g);
+  return { g, orb, light, zone };
+}
+
+const keys = new Set();
+let yaw = 0, dragging = false, shake = 0;
+let latch = { jump: 0, interact: 0, pulse: 0 };
+addEventListener("keydown", e => {
+  if (e.repeat) return;
+  const k = e.key.toLowerCase();
+  keys.add(k);
+  const now = performance.now();
+  if (k === " ") latch.jump = now + 90;
+  if (k === "e") latch.interact = now + 90;
+  if (k === "f") latch.pulse = now + 90;
+  if (k === "r") fetch("/restart", { method: "POST", body: "{}" });
+  if (k.startsWith("arrow") || k === " ") e.preventDefault();
+});
+addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
+addEventListener("mousedown", () => dragging = true);
+addEventListener("mouseup", () => dragging = false);
+addEventListener("mousemove", e => { if (dragging) yaw += e.movementX * 0.4; });
+document.getElementById("again").onclick = () => fetch("/restart", { method: "POST", body: "{}" });
+
+function inputState() {
+  const now = performance.now();
+  // camera looks toward +Z at yaw 0, so screen-right is -X in the contract's input space
+  const mx = (keys.has("a") ? 1 : 0) - (keys.has("d") ? 1 : 0);
+  const mz = (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0);
+  if (keys.has("arrowleft")) yaw -= 1.8;
+  if (keys.has("arrowright")) yaw += 1.8;
+  return { move: [mx, mz], yaw, jump: now < latch.jump, interact: now < latch.interact, pulse: now < latch.pulse };
+}
+setInterval(() => {
+  fetch("/input", { method: "POST", body: JSON.stringify(inputState()) }).catch(() => {});
+}, 25);
+
+const hud = document.getElementById("hud"), logEl = document.getElementById("log");
+const over = document.getElementById("over"), overtxt = document.getElementById("overtxt");
+const flash = document.getElementById("flash");
+let lastSeq = 0, lastTick = -1, pulseT = 0, msgs = [];
+const MSG = {
+  mote_picked: () => null,
+  deposit: d => `Đã đưa ${d.amount} ánh sáng vào ${d.lantern_id} (${d.deposited}/10)`,
+  lantern_lit: d => `${d.lantern_id} đã sáng!`,
+  pulse: d => `Tỏa sáng: đẩy lùi ${d.stunned_ids.length} Bóng Mực`,
+  player_hit: d => `Bóng Mực chạm bạn! Còn ${d.flames} ngọn lửa`,
+  shade_spawned: () => "Một Bóng Mực mới trườn ra từ sương...",
+};
+
+function sync(map, items, make, upd) {
+  const seen = new Set();
+  for (const it of items) {
+    seen.add(it.id);
+    let m = map.get(it.id);
+    if (!m) { m = make(it); map.set(it.id, m); scene.add(m); }
+    upd(m, it);
+  }
+  for (const [id, m] of map) if (!seen.has(id)) { scene.remove(m); map.delete(id); }
+}
+
+function apply(s) {
+  if (s.tick < lastTick) { msgs = []; lastSeq = 0; }
+  const [px, py, pz] = s.player.pos;
+  may.position.set(px, py, pz);
+  may.visible = !(s.invuln && Math.floor(s.tick / 5) % 2);
+  const yr = yaw * Math.PI / 180;
+  const dist = 9, h = 5.5;
+  camera.position.set(px - Math.sin(yr) * dist, py + h, pz - Math.cos(yr) * dist);
+  if (shake > 0) { camera.position.x += (Math.random() - .5) * shake; camera.position.y += (Math.random() - .5) * shake; shake *= 0.9; }
+  camera.lookAt(px, py + 1.2, pz);
+
+  for (const l of s.lanterns) {
+    let o = lanternMeshes[l.id];
+    if (!o) { o = lanternMeshes[l.id] = makeLantern(); o.g.position.set(l.pos[0], 0, l.pos[2]); }
+    const f = l.lit ? 1 : l.deposited / s.lantern_cost;
+    o.orb.material.emissive.setRGB(1.0 * f, 0.6 * f, 0.2 * f);
+    o.orb.material.color.setRGB(0.15 + 0.85 * f, 0.15 + 0.5 * f, 0.15);
+    o.light.intensity = l.lit ? 6 : f * 2;
+    o.zone.material.opacity = l.lit ? 0.5 : 0;
+  }
+  sync(moteMeshes, s.motes, m => new THREE.Mesh(moteGeo, m.id?.[0] === "G" ? goldMat : moteMat),
+    (m, it) => { m.material = it.id[0] === "G" ? goldMat : moteMat; m.scale.setScalar(it.id[0] === "G" ? 1.8 : 1);
+      m.position.set(it.pos[0], 0.8 + Math.sin(s.tick / 20 + it.pos[0]) * 0.2, it.pos[2]); });
+  sync(shadeMeshes, s.shades, () => new THREE.Mesh(shadeGeo, shadeMat),
+    (m, it) => { m.material = it.state === "stunned" ? stunMat : shadeMat;
+      m.position.set(it.pos[0], 0.7 + Math.sin(s.tick / 12) * 0.12, it.pos[2]); m.rotation.y = s.tick / 30; });
+
+  const lit = s.lanterns.filter(l => l.lit).length;
+  hud.innerHTML = `Điểm: <b>${s.score}</b><br>Ngọn lửa: <b>${"♥".repeat(Math.max(0, s.player.flames))}</b><br>` +
+    `Ánh sáng mang theo: <b>${s.player.carried}/${s.capacity}</b><br>Đèn đã thắp: <b>${lit}/${s.lanterns.length}</b><br>` +
+    `Bình minh sau: <b>${Math.ceil(s.time_left_s)}s</b>`;
+
+  for (const e of s.events) {
+    if (e.seq <= lastSeq) continue;
+    lastSeq = e.seq;
+    const t = MSG[e.name] && MSG[e.name](e.data);
+    if (t) { msgs.push(t); if (msgs.length > 4) msgs.shift(); }
+    if (e.name === "player_hit") { flash.style.opacity = .55; setTimeout(() => flash.style.opacity = 0, 150); shake = 0.8; }
+    if (e.name === "pulse") pulseT = 1;
+  }
+  logEl.innerHTML = msgs.join("<br>");
+  if (pulseT > 0) {
+    pulseT -= 0.04; pulseRing.visible = pulseT > 0;
+    pulseRing.position.set(px, 0.1, pz); pulseRing.scale.setScalar(1 + (1 - pulseT) * 5);
+    pulseRing.material.opacity = Math.max(0, pulseT);
+  }
+  if (s.state !== "playing") {
+    over.style.display = "flex";
+    overtxt.innerHTML = s.state === "won" ? `Các Đèn Lồng đã sáng lại!<br>Điểm: ${s.score}` :
+      (s.time_left_s <= 0 ? "Bình minh đến, đêm đã qua mà đèn chưa sáng hết." : "Mây hết ngọn lửa...") + `<br>Điểm: ${s.score}`;
+  } else {
+    over.style.display = "none";
+  }
+  lastTick = s.tick;
+}
+
+async function poll() {
+  try {
+    const s = await (await fetch("/state")).json();
+    window.__state = s;
+    apply(s);
+  } catch (e) { await new Promise(r => setTimeout(r, 300)); }
+  renderer.render(scene, camera);
+  requestAnimationFrame(poll);
+}
+poll();
+</script>
+</body>
+</html>
