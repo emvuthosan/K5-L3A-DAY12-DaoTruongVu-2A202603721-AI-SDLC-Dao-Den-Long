@@ -7,8 +7,15 @@
 - **Cần chỉnh:** nếu Phase 2 đổi luật, sửa test kèm lý do trong `docs/notes/`.
 - Token Phase 1: ước tính 150–200k (xem `ai-log.md`).
 
-## Phase 2–4
-Chưa thực hiện: ticket chưa được phát hành trên lab board tại thời điểm viết (không có yêu cầu để làm theo). Không có tag `phase-2`, `phase-3`, `phase-4` và không có Release `v1.0.0`.
+## Phase 2 — đánh giá
+- **Đạt:** toàn bộ số liệu chuẩn, 3 bản đồ, lướt, rơi, Gió Lạc, Bùa Gió, bục nhảy, gió, tạm dừng, contract v1.1; 46 test + 14 scenario; một Đêm headless 1.45 s (ngưỡng 30 s).
+- **Chưa kiểm:** ván thắng ba Đêm bằng tay trên giao diện, âm thanh bằng tai, màu pixel (xem `docs/proof/README.md`).
+- **Hỏng phase trước:** không hỏng ngoài ý muốn; các luật Phase 1 bị ticket thay thế đã được viết lại kèm lý do (`assumptions.md`). Test Phase 1 cũ được đổi số chứ không tắt.
+- **Cần chỉnh:** thêm test tự động cho chuỗi Đêm của server; chơi thử toàn bộ trước khi tag.
+- Token Phase 2: ước tính 250–350k.
+
+## Phase 3–4
+Chưa thực hiện (ticket chưa phát hành). Không có tag `phase-3`, `phase-4` và Release `v1.0.0`.
 
 ## Retro tạm thời
 - Hiệu quả: một `Sim` dùng chung cho headless và bản chơi; viết test trước khi tin code; scenario chạy thật bắt được lỗi scenario của chính mình.

@@ -1,6 +1,6 @@
 """Headless runner implementing Test Contract v1.0.
 
-  python3 -m game.headless --seed 1 --night 1 [--scenario f.json] [--inputs f.json]
+  python3 -m game.headless --seed 1 --night 1|2|3 [--scenario f.json] [--inputs f.json]
                            --ticks N --out out.jsonl [--snapshot-every 10]
 """
 import argparse
@@ -44,23 +44,25 @@ def parse_inputs(doc):
     return frames
 
 
-def run(seed, scenario, frames, ticks, out, every, contract=None):
-    sim = Sim(seed, scenario, contract)
-    cur = {"move": (0.0, 0.0), "cam_yaw_deg": 0.0, "jump": False, "interact": False, "pulse": False}
+def run(seed, scenario, frames, ticks, out, every, contract=None, night=1):
+    sim = Sim(seed, scenario, contract, night=night)
+    cur = {"move": (0.0, 0.0), "cam_yaw_deg": 0.0, "jump": False, "interact": False, "pulse": False,
+           "dash": False, "pause": False}
 
     def w(obj):
         out.write(json.dumps(obj, separators=(",", ":")) + "\n")
 
     w(sim.snapshot())
+    w({"type": "event", "tick": 0, "name": "night_start", "data": {"night": night}})
     for k in range(ticks):
-        if sim.state != "playing":
+        if sim.over:
             break
         fr = frames.get(k)
         if fr:
             if "move" in fr:
                 x, z = fr["move"]
                 cur["move"] = (max(-1.0, min(1.0, float(x))), max(-1.0, min(1.0, float(z))))
-            for key in ("cam_yaw_deg", "jump", "interact", "pulse"):
+            for key in ("cam_yaw_deg", "jump", "interact", "pulse", "dash", "pause"):
                 if key in fr:
                     cur[key] = fr[key]
         sim.step(cur)
@@ -83,14 +85,14 @@ def main(argv=None):
     ap.add_argument("--snapshot-every", type=int, default=10)
     a = ap.parse_args(argv)  # argparse exits with code 2 on bad args
     try:
-        if a.night != 1:
-            raise ScenarioError("only --night 1 exists")
+        if a.night not in (1, 2, 3):
+            raise ScenarioError("--night must be 1, 2 or 3")
         if a.ticks < 0 or a.snapshot_every < 1:
             raise ScenarioError("--ticks must be >= 0 and --snapshot-every >= 1")
         scenario = _load_json(a.scenario, "scenario") if a.scenario else None
         frames = parse_inputs(_load_json(a.inputs, "inputs")) if a.inputs else {}
         with open(a.out, "w", encoding="utf-8", newline="\n") as out:
-            run(a.seed, scenario, frames, a.ticks, out, a.snapshot_every)
+            run(a.seed, scenario, frames, a.ticks, out, a.snapshot_every, night=a.night)
     except ScenarioError as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
